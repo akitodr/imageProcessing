@@ -8,7 +8,6 @@ image.set_size(512, 512)
 image.set_image_to_gray()
 image.save_image(path + "_pb.png")
 
-
 sample_grid = int(input("Enter an even value for sample grid: "))
 while sample_grid % 2 != 0:
     sample_grid = int(input("Enter an even value for sample grid: "))

@@ -25,7 +25,7 @@ class ImageObject():
         self.image = self.grayimage
 
     def set_pixel(self, x, y, value):
-        self.image.putpixel((x,y), value)
+        self.image.putpixel((x, y), value)
 
     def get_width(self):
         return self.image.width
@@ -47,6 +47,57 @@ class ImageObject():
 
     def get_info(self):
         print(f"Width: {self.image.width}, Height: {self.image.height}, Mode: {self.image.mode}, Format: {self.image.format}")
+
+    def getMin(self):
+        percent = (self.get_width() * self.get_height()) * 0.1
+        min = 260
+        for y in range(self.get_height()):
+            for x in range(self.get_width()):
+                if self.get_grayscale(x, y) < min:
+                    min = self.get_grayscale(x, y)
+        return min
+
+    def getMax(self):
+        max = -1
+        for y in range(self.get_height()):
+            for x in range(self.get_width()):
+                if self.get_grayscale(x, y) > max:
+                    max = self.get_grayscale(x, y)
+        return max
+
+    #simple linear enhancement
+
+    def linearSum(self, value):
+        for y in range(self.get_height()):
+            for x in range(self.get_width()):
+                self.set_pixel(x, y, self.get_grayscale(x, y) + value)
+
+    def linearSub(self, value):
+        for y in range(self.get_height()):
+            for x in range(self.get_width()):
+                self.set_pixel(x, y, self.get_grayscale(x, y) + (-value))
+
+    def linearMult(self, value):
+        for y in range(self.get_height()):
+            for x in range(self.get_width()):
+                self.set_pixel(x, y, int(self.get_grayscale(x, y) * value))
+
+    def linearDiv(self, value):
+        for y in range(self.get_height()):
+            for x in range(self.get_width()):
+                self.set_pixel(x, y, int(self.get_grayscale(x, y) / value))
+
+    ###########################
+
+    def stretch(self):
+        max = self.getMax()
+        min = self.getMin()
+        print(max, min)
+        gain = 255 / (max - min)
+        for y in range(self.get_height()):
+            for x in range(self.get_width()):
+                result = int((self.get_grayscale(x, y) - min) * gain)
+                self.set_pixel(x, y, result)
 
     def quantize(self, level):
         color = 255 // (level - 1)
