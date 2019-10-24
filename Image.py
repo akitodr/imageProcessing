@@ -1,4 +1,5 @@
 from PIL import Image, ImageFont, ImageDraw, ImageOps
+from math import log2
 
 class ImageObject():
 
@@ -8,8 +9,9 @@ class ImageObject():
     def load_image(self):
         try:
             self.image = Image.open(self.path)
-        except:
+        except Exception as e:
             print('Skipping unreadable image {}'.format(self.path))
+            print(str(e))
 
     def show_image(self):
         self.image.show()
@@ -45,37 +47,56 @@ class ImageObject():
     def get_histogram(self):
         return self.image.histogram()
 
+    def get_copy(self):
+        return self.image.copy()
+
     def get_info(self):
         print(f"Width: {self.image.width}, Height: {self.image.height}, Mode: {self.image.mode}, Format: {self.image.format}")
 
-    def getMin(self):
-        percent = (self.get_width() * self.get_height()) * 0.1
-        min = 260
+    def pixelCount(self):
+        amount = 0
         for y in range(self.get_height()):
             for x in range(self.get_width()):
-                if self.get_grayscale(x, y) < min:
-                    min = self.get_grayscale(x, y)
-        return min
+                amount += 1
+        return amount
 
-    def getMax(self):
-        max = -1
+    def channelCount(self):
+        channelList = [0]*256
         for y in range(self.get_height()):
             for x in range(self.get_width()):
-                if self.get_grayscale(x, y) > max:
-                    max = self.get_grayscale(x, y)
-        return max
+                channelList[self.get_grayscale(x, y)] += 1
+        return channelList
 
-    #simple linear enhancement
+
+    def getMinMax(self, value):
+        amount = self.pixelCount()
+        percent = amount * value
+        sum = 0
+        channelList = self.channelCount()
+        for i in range(len(channelList)):
+            sum += channelList[i]
+            if sum >= percent:
+                min = i
+                break
+        sum = 0
+        for i in reversed(range(len(channelList))):
+            sum += channelList[i]
+            if sum > percent:
+                max = i
+                break
+        return (min, max)    
+
+    #simple linear hightlights
 
     def linearSum(self, value):
         for y in range(self.get_height()):
             for x in range(self.get_width()):
-                self.set_pixel(x, y, self.get_grayscale(x, y) + value)
+                self.set_pixel(x, y, int(self.get_grayscale(x, y) + value))
 
     def linearSub(self, value):
         for y in range(self.get_height()):
             for x in range(self.get_width()):
-                self.set_pixel(x, y, self.get_grayscale(x, y) + (-value))
+                self.set_pixel(x, y, int(self.get_grayscale(x, y) + (-value)))
 
     def linearMult(self, value):
         for y in range(self.get_height()):
@@ -87,17 +108,69 @@ class ImageObject():
             for x in range(self.get_width()):
                 self.set_pixel(x, y, int(self.get_grayscale(x, y) / value))
 
+    def transformation(self):
+        for y in range(self.get_height()):
+            for x in range(self.get_width()):
+                if self.get_grayscale(x, y) >= 0 and self.get_grayscale(x, y) <= 116:
+                    self.set_pixel(x, y, int(self.get_grayscale(x, y) * 1.5))
+                elif self.get_grayscale(x, y) > 116:
+                    self.set_pixel(x, y, int(104 + (self.get_grayscale(x, y) * 0.6)))
+
     ###########################
 
-    def stretch(self):
-        max = self.getMax()
-        min = self.getMin()
-        print(max, min)
+    def exponential(self):
+        min, max = self.getMinMax(0.01)
+        c = 255 / log2(1 + max)
+        base = 1.01
+        for y in range(self.get_height()):
+            for x in range(self.get_width()):
+                channel = self.get_grayscale(x, y) / 255.0
+                result = c * (base**channel - 1)
+                self.set_pixel(x, y, int(result * 255))
+
+    def logarithm(self):
+        min, max = self.getMinMax(0.01)
+        c = 255 / log2(1 + max)
+        for y in range(self.get_height()):
+            for x in range(self.get_width()):
+                channel = self.get_grayscale(x, y)
+                result = int(c * log2(1 + channel))
+                self.set_pixel(x, y, result)
+
+    def stretch(self, value):
+        min, max = self.getMinMax(value)
         gain = 255 / (max - min)
         for y in range(self.get_height()):
             for x in range(self.get_width()):
                 result = int((self.get_grayscale(x, y) - min) * gain)
                 self.set_pixel(x, y, result)
+
+    def probability(self):
+        channelList = self.channelCount()
+        pixelAmount = self.pixelCount()
+        probabilities = [0]*len(channelList)
+        for i in range(len(channelList)):
+            probabilities[i] = channelList[i] / pixelAmount
+        return probabilities
+
+    def round_values(self):
+        probabilities = self.probability()
+        values = [0]*len(probabilities)
+        value = 0
+        for i in range(len(probabilities)):
+            value += probabilities[i]
+            values[i] = round(value * (len(probabilities) -1))
+        return values
+
+    def equalization(self):
+        current_values = self.channelCount()
+        new_values = self.round_values()
+        for y in range(self.get_height()):
+            for x in range(self.get_width()):
+                channel = self.get_grayscale(x, y)
+                self.set_pixel(x, y, new_values[channel])
+
+
 
     def quantize(self, level):
         color = 255 // (level - 1)
