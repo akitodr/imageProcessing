@@ -1,6 +1,7 @@
 from Image import ImageObject
 from Histogram import gray_histogram
 from copy import deepcopy
+import matplotlib.pylab as plt
 
 path = "images/"
 image = ImageObject(path + "greyscale.png")
@@ -17,8 +18,10 @@ log_image.logarithm()
 log_image.save_image(path + "expandlog/logarithm.png")
 
 image.show_image()
-gray_histogram(image)
+gray_histogram(image, 'r')
 exp_image.show_image()
-gray_histogram(exp_image)
+gray_histogram(exp_image, 'g')
 log_image.show_image()
-gray_histogram(log_image)
+gray_histogram(log_image, "gray")
+
+plt.show()

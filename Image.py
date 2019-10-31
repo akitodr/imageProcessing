@@ -1,7 +1,8 @@
 from PIL import Image, ImageFont, ImageDraw, ImageOps
 from math import log2
 
-class ImageObject():
+
+class ImageObject:
 
     def __init__(self, path):
         self.path = path
@@ -163,7 +164,6 @@ class ImageObject():
         return values
 
     def equalization(self):
-        current_values = self.channelCount()
         new_values = self.round_values()
         for y in range(self.get_height()):
             for x in range(self.get_width()):

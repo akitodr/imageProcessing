@@ -1,6 +1,7 @@
 from Image import ImageObject
 from Histogram import gray_histogram
 from copy import deepcopy
+import matplotlib.pylab as plt
 
 path = "images/"
 image = ImageObject(path + "greyscale.png")
@@ -38,7 +39,9 @@ if option == 4:
     image.save_image(path + name + f"{int(highlight)}.png")
 
 old_image.show_image()
-gray_histogram(old_image)
+gray_histogram(old_image, 'gray')
 
 image.show_image()
-gray_histogram(image)
+gray_histogram(image, 'r')
+
+plt.show()
